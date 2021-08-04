@@ -15,5 +15,6 @@ urlpatterns = [
     path('api/doc/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     # Own Django Apps.
     path('security/', include('scheduler.apps.security.urls')),
+    path('schedule/', include('scheduler.apps.schedule.urls')),
 ]
 
