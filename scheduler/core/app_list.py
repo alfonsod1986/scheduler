@@ -22,6 +22,7 @@ __AFTER_DJANGO_APPS = (  # Apps de terceros que deben cargar después que las de
 __OWN_APPS = (
     'scheduler.apps.apidoc',
     'scheduler.apps.security',
+    'scheduler.apps.schedule',
 )
 
 __THIRD_PARTY_APPS = (
