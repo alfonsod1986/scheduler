@@ -25,6 +25,8 @@ class ActivityViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ActivitySerializer
     queryset = Activity.objects.all()
+    page_size = 10
+    max_page_size = 1000
 
     def list(self, request):
         try:
@@ -38,8 +40,10 @@ class ActivityViewSet(viewsets.ModelViewSet):
             activities = Activity.objects.filter(
                 schedule__date__gte=start_date, schedule__date__lte=end_date).filter(~Q(status=DISABLED)).order_by('schedule')
 
-            serializer = ActivityListSerializer(activities, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            page = self.paginator.paginate_queryset(activities, request)
+
+            serializer = ActivityListSerializer(page, many=True)
+            return self.paginator.get_paginated_response(serializer.data)
 
         except Exception as err:
             print(err)
