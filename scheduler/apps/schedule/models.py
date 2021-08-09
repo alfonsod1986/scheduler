@@ -31,10 +31,15 @@ class Property(TimeStampMixin):
 
 
 class Activity(TimeStampMixin):
+    STATUS_CHOICES = (
+        ('Enabled', 'ENABLED'),
+        ('Disabled', 'DISABLED')
+    )
+
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, verbose_name=_("Propiedad"))
     schedule = models.DateTimeField(help_text=_("Fecha de agenda"))
     title = models.CharField(max_length= 255, verbose_name=_("Título"))
-    status = models.CharField(max_length= 35, verbose_name=_("Status"))
+    status = models.CharField(max_length= 35, verbose_name=_("Status"), default='Enabled', choices=STATUS_CHOICES)
 
     def __str__(self):
         return "{0} - {1}".format(self.id, self.title)
