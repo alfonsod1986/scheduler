@@ -50,6 +50,20 @@ class ActivityViewSet(viewsets.ModelViewSet):
             return Response(data={'message': _("Ocurrió un error durante el proceso")},
                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def retrieve(self, request, pk=None):
+        try:
+            activity = Activity.objects.get(pk=pk)
+            serializer = ActivityListSerializer(activity)
+            return Response(data=serializer.data,
+                                        status=status.HTTP_200_OK)
+        except Activity.DoesNotExist:
+            return Response(data={'message': _("La actividad que intentas consultar no existe")},
+                                        status=status.HTTP_404_NOT_FOUND)
+        except Exception as err:
+            print(err)
+            return Response(data={'message': _("Ocurrió un error durante el proceso")},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def create(self, request):
         try:
             serializer = self.serializer_class(data=request.data)
