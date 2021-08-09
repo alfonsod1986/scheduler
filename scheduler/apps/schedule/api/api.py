@@ -1,10 +1,11 @@
 from datetime import datetime
+from django.db.models import Q
 from rest_framework import viewsets, status
 from django.utils.translation import ugettext as _
 from rest_framework.views import APIView
 from scheduler.apps.schedule.models import Property, Activity
 from rest_framework.response import Response
-from ..constants import DISABLED, LOCAL_TZ, UTC_TZ
+from ..constants import ENABLED, DISABLED, LOCAL_TZ, UTC_TZ
 from ..functions import is_activity_lasts_a_maximum_one_hour
 from .serializers import *
 from .filters import *
@@ -35,8 +36,6 @@ class ActivityViewSet(viewsets.ModelViewSet):
                 schedule_date = schedule[:10]
                 prop = Property.objects.get(pk=property_id)
 
-                print(schedule_datetime)
-
                 if prop.status == DISABLED:
                     return Response(data={'message': _("La propiedad que intenta ingresar está desactivada")},
                                         status=status.HTTP_400_BAD_REQUEST)
@@ -61,6 +60,52 @@ class ActivityViewSet(viewsets.ModelViewSet):
             return Response(data={'message': _("Ocurrió un error durante el proceso")},
                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    def update(self, request, pk=None):
+        try:
+            schedule = request.data.get('schedule', None)
+            if not schedule:
+                return Response(data={'message': _("Debes de mandar la fecha y hora para poder reagendar la actividad")},
+                                        status=status.HTTP_400_BAD_REQUEST)
+            schedule_datetime = UTC_TZ.localize(datetime.strptime(schedule, '%Y-%m-%dT%H:%M:%S.%fZ'))
+            schedule_date = schedule[:10]
+
+            activity = Activity.objects.get(pk=pk)
+
+            activities = Activity.objects.filter(
+                property_id=activity.property_id, schedule__date=schedule_date).filter(~Q(id=pk)).order_by('schedule')
+            
+            if activities:
+                for activity in activities:
+                    if schedule_datetime > activity.schedule:
+                        if not is_activity_lasts_a_maximum_one_hour(activity.schedule, schedule_datetime):
+                            return Response(data={'message': _("La actividad debe durar 1 hora como máximo")},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    if activity.schedule == schedule_datetime:
+                        return Response(data={'message': _("Ya existen actividades agendadas en esa fecha y hora")},
+                                        status=status.HTTP_400_BAD_REQUEST)
+            
+            activity.schedule =schedule_datetime
+            activity.save()
+
+            return Response(data={'message': _("La actividad ha sido reagendada correctamente")},
+                                        status=status.HTTP_200_OK)
+        except Activity.DoesNotExist:
+            return Response(data={'message': _("La actividad que intentas reprogramar no existe o está cancelada")},
+                                        status=status.HTTP_404_NOT_FOUND)
+        except Exception as err:
+            print(err)
+            return Response(data={'message': _("Ocurrió un error durante el proceso")},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            kwargs['partial'] = True
+            return self.update(request, *args, **kwargs)
+        except Exception as err:
+            print(err)
+            return Response(data={'message': _("Ocurrió un error durante el proceso")},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def destroy(self, request, pk=None):
         try:
             activity = Activity.objects.get(pk=pk)
