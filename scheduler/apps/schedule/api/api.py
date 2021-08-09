@@ -59,4 +59,19 @@ class ActivityViewSet(viewsets.ModelViewSet):
         except Exception as err:
             print(err)
             return Response(data={'message': _("Ocurrió un error durante el proceso")},
-                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)     
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def destroy(self, request, pk=None):
+        try:
+            activity = Activity.objects.get(pk=pk)
+            activity.status = DISABLED
+            activity.save()
+            return Response(data={'message': _("La actividad se ha cancelado")},
+                                        status=status.HTTP_204_NO_CONTENT)
+        except Activity.DoesNotExist:
+            return Response(data={'message': _("La actividad que intentas cancelar no existe")},
+                                        status=status.HTTP_404_NOT_FOUND)
+        except Exception as err:
+            print(err)
+            return Response(data={'message': _("Ocurrió un error durante el proceso")},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
