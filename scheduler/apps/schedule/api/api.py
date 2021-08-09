@@ -5,8 +5,8 @@ from django.utils.translation import ugettext as _
 from rest_framework.views import APIView
 from scheduler.apps.schedule.models import Property, Activity
 from rest_framework.response import Response
-from ..constants import ENABLED, DISABLED, LOCAL_TZ, UTC_TZ
-from ..functions import is_activity_lasts_a_maximum_one_hour
+from ..constants import ENABLED, DISABLED, UTC_TZ, NOW_AFTER_TWO_WEEKS_ON_DAYS, NOW_BEFORE_THREE_DAYS
+from ..functions import is_activity_lasts_a_maximum_one_hour, get_custom_now
 from .serializers import *
 from .filters import *
 
@@ -25,6 +25,26 @@ class ActivityViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ActivitySerializer
     queryset = Activity.objects.all()
+
+    def list(self, request):
+        try:
+            start_date = request.GET.get('start_date', None) 
+            end_date = request.GET.get('end_date', None)
+
+            start_date = start_date if start_date is not None else get_custom_now(NOW_BEFORE_THREE_DAYS)
+            end_date = end_date if end_date is not None else get_custom_now(NOW_AFTER_TWO_WEEKS_ON_DAYS)
+
+
+            activities = Activity.objects.filter(
+                schedule__date__gte=start_date, schedule__date__lte=end_date).filter(~Q(status=DISABLED)).order_by('schedule')
+
+            serializer = ActivityListSerializer(activities, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as err:
+            print(err)
+            return Response(data={'message': _("Ocurrió un error durante el proceso")},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request):
         try:
