@@ -33,7 +33,8 @@ class Property(TimeStampMixin):
 class Activity(TimeStampMixin):
     STATUS_CHOICES = (
         ('Enabled', 'ENABLED'),
-        ('Disabled', 'DISABLED')
+        ('Disabled', 'DISABLED'),
+        ('Done', 'DONE')
     )
 
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, verbose_name=_("Propiedad"))
