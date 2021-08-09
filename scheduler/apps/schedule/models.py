@@ -10,11 +10,16 @@ class TimeStampMixin(models.Model):
         abstract = True
 
 class Property(TimeStampMixin):
+    STATUS_CHOICES = (
+        ('Enabled', 'ENABLED'),
+        ('Disabled', 'DISABLED')
+    )
+
     title = models.CharField(max_length= 255, verbose_name=_("Título"))
     address = models.TextField(verbose_name=_("Dirección"))
     description = models.TextField(verbose_name=_("Descripción"))
     disabled_at = models.DateTimeField(null=True, blank=True, default=None, help_text=_("Fecha de modificación"))
-    status = models.CharField(max_length= 35, verbose_name=_("Status"))
+    status = models.CharField(max_length= 35, verbose_name=_("Status"), default='Enabled', choices=STATUS_CHOICES)
 
 
     def __str__(self):
